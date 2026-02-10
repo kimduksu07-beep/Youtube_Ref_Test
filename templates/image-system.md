@@ -94,3 +94,51 @@ with circular glasses and navy oversized hoodie"
 realistic, 3D render, photographic, dark horror,
 gore, violence, nsfw, deformed, ugly, blurry,
 low quality, watermark, text overlay
+
+---
+
+## 영상 루프 & 전환 설계 규칙 (image-to-video 10초 기준)
+
+### 기본 원칙
+- image-to-video 도구는 1장의 이미지에서 약 10초 영상을 생성한다
+- 따라서 하나의 스크립트 장면(약 30~60초)에는 여러 장의 이미지가 필요하다
+- 각 장면을 "서브 컷(sub-cut)"으로 세분화한다
+
+### 서브 컷 구조
+하나의 [장면 N]을 아래처럼 나눈다:
+
+[장면 N] (약 50초 분량이라면)
+├── 컷 N-A: 도입 이미지 (10초) — 캐릭터 등장 또는 배경 설정
+├── 컷 N-B: 핵심 이미지 (10초) — 메인 내용 시각화
+├── 컷 N-C: 반응 이미지 (10초) — 캐릭터 감정 표현
+├── 컷 N-D: 전환 이미지 (10초) — 다음 장면으로 자연스럽게 연결
+└── 컷 N-E: (필요 시) 보조 이미지 (10초) — 추가 설명 또는 예시
+
+### 루프 & 연결 규칙
+
+1. 같은 장면 내 서브 컷 연결:
+   - 배경색이 동일해야 한다
+   - 캐릭터 위치가 크게 변하지 않아야 한다
+   - 포즈만 미세하게 변경 (예: 손 위치, 고개 방향)
+   → 프롬프트에 "slight variation of previous cut, same background" 포함
+
+2. 장면 간 전환:
+   - 마지막 서브 컷과 다음 장면 첫 서브 컷의 색상을 그라데이션으로 연결
+   - 전환 컷에는 "transitioning background from [색상A] to [색상B]" 포함
+   - 캐릭터는 유지하되 배경만 서서히 변경
+
+3. 루프 가능한 컷 표시:
+   - 설명이 긴 구간에서는 "loopable" 태그 추가
+   - loopable 컷: 시작과 끝이 자연스럽게 이어지는 단순 동작
+   → 프롬프트에 "seamless loop, subtle idle animation,
+      character slightly swaying or blinking" 포함
+
+### 컷당 프롬프트 추가 태그
+- [LOOP]: 이 컷은 반복 재생 가능하도록 설계
+- [TRANSITION-IN]: 이전 장면에서 자연스럽게 전환되는 진입 컷
+- [TRANSITION-OUT]: 다음 장면으로 자연스럽게 전환되는 퇴장 컷
+- [HERO]: 이 장면의 핵심 이미지 (가장 중요한 컷)
+
+### 서브 컷 수 계산 기준
+- 스크립트 장면의 글자 수 ÷ 150자 = 대략적인 소요 시간(초) ÷ 10 = 필요 서브 컷 수
+- 최소 2컷, 최대 6컷
