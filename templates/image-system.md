@@ -17,28 +17,28 @@ NanoBanana Pro style, consistent character design
 - 입: 작고 단순한 미소 (점 또는 작은 곡선)
 - 머리카락: 없음 (매끈한 흰색 머리)
 - 의상: 남색(navy) 오버사이즈 후디, 약간 큰 사이즈로 귀여운 느낌
-- 소품: "PSYCH" 라고 적힌 베이지색 노트/책을 들고 있음
 - 손: 작고 단순한 형태, 후디 소매에 살짝 가려짐
 - 발: 작고 짧은 다리, 신발 없이 단순한 형태
+- 참고: "PSYCH" 노트는 채널 프로필 전용 소품이며, 영상 장면에서는 포함하지 않는다
 
 ### 영문 프롬프트용 캐릭터 묘사 (모든 장면에 이 문장 포함)
 "A cute round 2-head-proportion character with white/light blue smooth skin,
 large round black eyes behind circular black-framed glasses,
-no hair, wearing an oversized navy hoodie, holding a beige notebook
-labeled 'PSYCH', small simple hands partially hidden by hoodie sleeves,
+no hair, wearing an oversized navy hoodie,
+small simple hands partially hidden by hoodie sleeves,
 short stubby legs, minimal facial features with a small gentle smile,
 chibi-style, 2D flat animation, NanoBanana Pro style"
 
-### 장면별 캐릭터 변형 규칙
-- 기본 상태: 노트를 양손으로 안고 있는 포즈
-- 설명 장면: 한 손으로 노트를 들고 다른 손으로 가리키는 포즈
-- 감정 장면: 노트를 내려놓고 해당 감정 표현 (눈 모양만 변경)
+### 장면별 캐릭터 포즈 변형
+- 설명 장면: 한 손을 들어 가리키는 포즈, 또는 턱에 손을 대고 생각하는 포즈
+- 감정 장면: 해당 감정 표현 (눈 모양만 변경)
   - 슬픔: 눈이 반달 모양으로 축 처짐
   - 놀람: 눈이 더 커지고 입이 O 모양
   - 기쁨: 눈이 ^ ^ 모양으로 웃음
   - 걱정: 눈썹이 팔자, 입이 구불구불
-- 실천 장면: 노트를 펼쳐 보여주는 포즈, 자신감 있는 표정
+- 실천 장면: 두 주먹을 쥐고 파이팅 포즈, 자신감 있는 표정
 - 마무리: 한 손을 흔들며 인사하는 포즈
+- 공감 장면: 두 손을 가슴에 모으는 포즈
 
 ### Scene 2 이후 프롬프트 필수 포함 문구
 "same character as Scene 1 - round white chibi character
