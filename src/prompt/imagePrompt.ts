@@ -48,6 +48,39 @@ async function readImageTemplate(): Promise<string> {
 }
 
 /**
+ * 텍스트에서 [장면 N] 태그 수를 카운트합니다
+ *
+ * @param text - 분석할 텍스트
+ * @returns 장면 수
+ */
+function countScenesTags(text: string): number {
+  const matches = text.match(/\[장면 \d+\]/g);
+  return matches ? matches.length : 0;
+}
+
+/**
+ * 텍스트에서 ### 장면 패턴 수를 카운트합니다
+ *
+ * @param text - 분석할 텍스트
+ * @returns 장면 수
+ */
+function countScenes(text: string): number {
+  const matches = text.match(/### 장면/g);
+  return matches ? matches.length : 0;
+}
+
+/**
+ * 텍스트에서 #### 컷 패턴 수를 카운트합니다
+ *
+ * @param text - 분석할 텍스트
+ * @returns 컷 수
+ */
+function countCuts(text: string): number {
+  const matches = text.match(/#### 컷/g);
+  return matches ? matches.length : 0;
+}
+
+/**
  * 이미지 프롬프트 생성 요청문을 조합합니다
  *
  * @param script - 스크립트 내용
@@ -57,6 +90,9 @@ async function readImageTemplate(): Promise<string> {
 function buildImagePrompt(script: string, template: string): string {
   const prompt = `아래 유튜브 스크립트의 각 [장면 N] 태그에 맞는
 나노바나나프로(NanoBanana Pro) 이미지 프롬프트를 작성해주세요.
+
+각 장면을 10초 단위의 서브 컷으로 나눠야 합니다.
+image-to-video 도구가 1장의 이미지에서 10초 영상을 생성하기 때문입니다.
 
 ## 이미지 스타일 가이드
 ${template}
@@ -72,7 +108,7 @@ ${script}
 ---
 ### 장면 N (타임스탬프)
 **장면 유형:** 후크 / 설명 / 감정 / 실천 / 마무리 중 선택
-**필요 서브 컷 수:** N개 (해당 구간 길이 ÷ 10초)
+**필요 서브 컷 수:** N개 (해당 구간 길이 / 10초)
 
 **스크립트 해당 부분:**
 "해당 대사 일부 인용..."
@@ -104,16 +140,16 @@ realistic, 3D render, photographic, dark horror, gore, violence, nsfw, deformed,
 ---
 
 ## 중요 규칙
-1. 장면 1에서 캐릭터를 상세히 정의하세요. 반드시 image-system.md의 "영문 프롬프트용 캐릭터 묘사" 문장을 그대로 사용하세요.
+1. 장면 1에서 캐릭터를 상세히 정의하세요. 반드시 이미지 가이드의 "영문 프롬프트용 캐릭터 묘사" 문장을 그대로 사용하세요.
 2. 장면 2부터는 "same character as Scene 1 - round white chibi character with circular glasses and navy oversized hoodie" 를 반드시 포함하세요.
 3. PSYCH 노트는 포함하지 마세요. 채널 프로필 전용 소품입니다.
 4. 인접한 장면 간 색감이 급격히 변하지 않도록 자연스럽게 전환하세요.
 5. 심리학 추상 개념은 반드시 시각적 메타포로 변환하세요.
 6. 모든 프롬프트에 "2D flat animation, NanoBanana Pro style, 16:9" 를 포함하세요.
 7. 하나의 장면에 반드시 2개 이상의 서브 컷을 만드세요.
-8. [LOOP] 태그 컷은 시작과 끝이 자연스럽게 연결되도록 "seamless loop, subtle idle animation" 을 포함하세요.
-9. [TRANSITION-OUT] 컷의 배경색은 다음 장면 [TRANSITION-IN] 컷의 배경색과 유사하게 맞추세요.
-10. 전체 영상에서 예상되는 총 컷 수도 마지막에 요약해주세요.`;
+8. [LOOP] 태그 컷은 "seamless loop, subtle idle animation" 을 포함하세요.
+9. [TRANSITION-OUT] 컷의 배경색은 다음 장면 첫 컷의 배경색과 유사하게 맞추세요.
+10. 마지막에 전체 영상의 총 컷 수와 예상 총 시간을 요약해주세요.`;
 
   return prompt;
 }
@@ -183,17 +219,6 @@ async function getImagePromptsFromUser(): Promise<string> {
 }
 
 /**
- * 텍스트에서 장면 수를 카운트합니다
- *
- * @param text - 분석할 텍스트
- * @returns 장면 수
- */
-function countScenes(text: string): number {
-  const matches = text.match(/### 장면/g);
-  return matches ? matches.length : 0;
-}
-
-/**
  * 선택한 주제를 기반으로 이미지 프롬프트 생성 요청을 만듭니다
  *
  * @param topic - 선택한 트렌딩 주제
@@ -202,7 +227,7 @@ function countScenes(text: string): number {
 export async function generateImagePrompt(topic: TrendingTopic): Promise<string | null> {
   try {
     console.log(chalk.bold.white('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-    console.log(chalk.bold.white('🎨 3단계: 이미지 프롬프트 생성'));
+    console.log(chalk.bold.white('🎨 STEP 5: 이미지 프롬프트 생성'));
     console.log(chalk.bold.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
 
     // 1. 출력 디렉토리 확인
@@ -214,22 +239,32 @@ export async function generateImagePrompt(topic: TrendingTopic): Promise<string 
     const script = await readScriptFile(outputDir);
     console.log(chalk.green('✓ 스크립트 파일 읽기 완료\n'));
 
-    // 3. 이미지 템플릿 읽기
+    // 3. 스크립트 분석
+    const sceneCount = countScenesTags(script);
+    const estimatedCuts = sceneCount * 3; // 평균 3개 서브 컷
+    const estimatedCutsMax = sceneCount * 4; // 최대 4개 서브 컷
+
+    console.log(chalk.bold.cyan('📊 스크립트 분석 결과:'));
+    console.log(chalk.white(`   - 총 장면 수: ${sceneCount}개`));
+    console.log(chalk.white(`   - 예상 서브 컷 수: 약 ${estimatedCuts}~${estimatedCutsMax}개`));
+    console.log(chalk.white(`   - 예상 총 이미지: 약 ${estimatedCuts}~${estimatedCutsMax}장\n`));
+
+    // 4. 이미지 템플릿 읽기
     console.log(chalk.cyan('📖 이미지 템플릿 파일 읽는 중...'));
     const template = await readImageTemplate();
     console.log(chalk.green('✓ 템플릿 파일 읽기 완료\n'));
 
-    // 4. 프롬프트 조합
+    // 5. 프롬프트 조합
     console.log(chalk.cyan('✍️  프롬프트 조합 중...\n'));
     const prompt = buildImagePrompt(script, template);
 
-    // 5. 파일 저장
+    // 6. 파일 저장
     const promptPath = await saveToFile(outputDir, prompt, 'image-prompt-request.md');
 
-    // 6. 클립보드 복사
+    // 7. 클립보드 복사
     await copyToClipboard(prompt, promptPath);
 
-    // 7. 안내 메시지 출력
+    // 8. 안내 메시지 출력
     console.log(chalk.green.bold('\n✅ 이미지 프롬프트 생성 요청이 준비되었습니다!\n'));
     console.log(chalk.cyan(`📋 클립보드에 복사 완료!`));
     console.log(chalk.cyan(`📁 저장 위치: ${promptPath}\n`));
@@ -241,9 +276,14 @@ export async function generateImagePrompt(topic: TrendingTopic): Promise<string 
     console.log(chalk.white('3단계:') + chalk.yellow(' Ctrl+V ') + chalk.white('로 프롬프트를 붙여넣고 Enter'));
     console.log(chalk.white('4단계: Claude가 이미지 프롬프트를 생성하면 전체를 복사하세요') + chalk.yellow(' (Ctrl+A → Ctrl+C)'));
     console.log(chalk.white('5단계: 이 프로그램으로 돌아오세요'));
-    console.log(chalk.bold('══════════════════════════════════════════════\n'));
+    console.log(chalk.bold('══════════════════════════════════════════════'));
+    console.log(chalk.yellow('\n⚠️  프롬프트가 길어서 Claude 응답이 중간에 끊길 수 있습니다.'));
+    console.log(chalk.cyan('   그 경우 "계속 이어서 작성해주세요" 라고 입력하세요.\n'));
+    console.log(chalk.cyan('💡 팁: 프롬프트가 길어서 한 번에 안 될 수 있어요.'));
+    console.log(chalk.cyan(`   그럴 때는 Claude에게 '장면 1~8까지만 먼저 작성해주세요'처럼`));
+    console.log(chalk.cyan('   나눠서 요청하면 됩니다.\n'));
 
-    // 8. 선택지 표시
+    // 9. 선택지 표시
     const answer = await inquirer.prompt([
       {
         type: 'list',
@@ -274,7 +314,13 @@ export async function generateImagePrompt(topic: TrendingTopic): Promise<string 
       if (imagePrompts.trim().length > 0) {
         const imagePromptsPath = await saveToFile(outputDir, imagePrompts, 'image-prompts.md');
         const sceneCount = countScenes(imagePrompts);
-        console.log(chalk.green.bold(`\n✅ 이미지 프롬프트가 저장되었습니다! (총 ${sceneCount}개 장면)`));
+        const cutCount = countCuts(imagePrompts);
+        const estimatedTime = cutCount * 10; // 10초 per cut
+        const estimatedMinutes = (estimatedTime / 60).toFixed(1);
+
+        console.log(chalk.green.bold(`\n✅ 이미지 프롬프트가 저장되었습니다!`));
+        console.log(chalk.cyan(`📊 총 ${sceneCount}개 장면, ${cutCount}개 서브 컷`));
+        console.log(chalk.cyan(`⏱️  예상 영상 길이: 약 ${estimatedTime}초 (${estimatedMinutes}분)`));
         console.log(chalk.gray(`📁 위치: ${imagePromptsPath}\n`));
         return imagePrompts;
       } else {
@@ -290,7 +336,13 @@ export async function generateImagePrompt(topic: TrendingTopic): Promise<string 
       try {
         const imagePrompts = await fs.readFile(imagePromptsPath, 'utf-8');
         const sceneCount = countScenes(imagePrompts);
-        console.log(chalk.green(`\n✅ 확인 완료! (총 ${sceneCount}개 장면)\n`));
+        const cutCount = countCuts(imagePrompts);
+        const estimatedTime = cutCount * 10;
+        const estimatedMinutes = (estimatedTime / 60).toFixed(1);
+
+        console.log(chalk.green(`\n✅ 확인 완료!`));
+        console.log(chalk.cyan(`📊 총 ${sceneCount}개 장면, ${cutCount}개 서브 컷`));
+        console.log(chalk.cyan(`⏱️  예상 영상 길이: 약 ${estimatedTime}초 (${estimatedMinutes}분)\n`));
         return imagePrompts;
       } catch {
         console.log(chalk.red('\n❌ 파일을 찾을 수 없습니다.'));
@@ -301,7 +353,7 @@ export async function generateImagePrompt(topic: TrendingTopic): Promise<string 
     }
 
     if (answer.action === 'skip') {
-      console.log(chalk.yellow('\n⏭️ 나중에 이미지 프롬프트를 생성하세요.\n'));
+      console.log(chalk.yellow('\n⏭️  나중에 이미지 프롬프트를 생성하세요.\n'));
       return null;
     }
 

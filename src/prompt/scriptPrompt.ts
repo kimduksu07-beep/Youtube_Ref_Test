@@ -151,7 +151,7 @@ async function saveToFile(outputDir: string, content: string, filename: string):
 export async function generateScriptPrompt(topic: TrendingTopic): Promise<string | null> {
   try {
     console.log(chalk.bold.white('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-    console.log(chalk.bold.white('📝 2단계: 스크립트 프롬프트 생성'));
+    console.log(chalk.bold.white('📝 STEP 3: 스크립트 프롬프트 생성'));
     console.log(chalk.bold.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
 
     // 1. 출력 디렉토리 생성
