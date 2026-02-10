@@ -11,11 +11,10 @@
 export function getYouTubeApiKey(): string {
   const apiKey = process.env.YOUTUBE_API_KEY;
 
-  if (!apiKey) {
+  if (!apiKey || apiKey.trim() === '') {
     throw new Error(
       '❌ YouTube API 키가 설정되지 않았습니다.\n' +
-      '💡 .env 파일에 YOUTUBE_API_KEY를 추가해주세요.\n' +
-      '   예시: YOUTUBE_API_KEY=당신의_API_키'
+      '💡 해결법: .env 파일을 열어서 YOUTUBE_API_KEY= 뒤에 API 키를 붙여넣으세요.'
     );
   }
 

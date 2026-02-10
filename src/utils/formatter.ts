@@ -8,25 +8,26 @@ import dayjs from 'dayjs';
  * 조회수를 한국어 형식으로 포맷팅합니다
  *
  * @param count - 조회수
- * @returns 포맷팅된 문자열 (예: "1.2만", "10.5만")
+ * @returns 포맷팅된 문자열 (예: "1,234회", "12.3만회")
  */
 export function formatViewCount(count: number): string {
   if (count >= 10000) {
-    return `${(count / 10000).toFixed(1)}만`;
+    const manCount = count / 10000;
+    return `${manCount.toFixed(1)}만회`;
   } else if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}천`;
+    return `${count.toLocaleString('ko-KR')}회`;
   }
-  return count.toString();
+  return `${count}회`;
 }
 
 /**
  * 날짜를 한국어 형식으로 포맷팅합니다
  *
  * @param dateString - ISO 날짜 문자열
- * @returns 포맷팅된 날짜 (예: "2024-01-15")
+ * @returns 포맷팅된 날짜 (예: "2026.02.01")
  */
 export function formatDate(dateString: string): string {
-  return dayjs(dateString).format('YYYY-MM-DD');
+  return dayjs(dateString).format('YYYY.MM.DD');
 }
 
 /**
