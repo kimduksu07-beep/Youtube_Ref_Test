@@ -43,7 +43,6 @@ function displayTopics(topics: TrendingTopic[]): void {
     console.log(chalk.bold.cyan('║') + titleLine + ''.padEnd(width - 2 - titleLineLength) + chalk.bold.cyan('║'));
 
     // 채널명 & 날짜 라인
-    const channelInfo = `     📺 ${topic.channelName}  |  📅 ${topic.publishedAt}`;
     const channelInfoClean = `     📺 ${topic.channelName}  |  📅 ${topic.publishedAt}`;
     const channelLine = '     ' + chalk.blue(`📺 ${topic.channelName}`) + '  |  ' + chalk.gray(`📅 ${topic.publishedAt}`);
 
