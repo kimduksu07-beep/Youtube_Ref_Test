@@ -42,3 +42,55 @@ export function validateConfig(): void {
     process.exit(1);
   }
 }
+
+/**
+ * 검색 기본 설정
+ */
+export const DEFAULT_SEARCH_DAYS = 14;
+export const FALLBACK_SEARCH_DAYS = 30;
+export const MIN_DURATION_SECONDS = 300; // 5분
+export const DEFAULT_TOP_COUNT = 5;
+export const MAX_RESULTS_PER_SEARCH = 50;
+
+/**
+ * 조회수 범위 프리셋
+ */
+export interface ViewRange {
+  name: string;
+  min: number;
+  max: number;
+}
+
+export const VIEW_RANGES: ViewRange[] = [
+  { name: '전체', min: 0, max: Infinity },
+  { name: '1만~10만', min: 10000, max: 100000 },
+  { name: '10만~50만', min: 100000, max: 500000 },
+  { name: '50만~100만', min: 500000, max: 1000000 },
+  { name: '100만 이상', min: 1000000, max: Infinity },
+];
+
+/**
+ * 날짜 범위 프리셋
+ */
+export interface DateRange {
+  name: string;
+  days: number;
+}
+
+export const DATE_RANGES: DateRange[] = [
+  { name: '최근 7일', days: 7 },
+  { name: '최근 14일', days: 14 },
+  { name: '최근 30일', days: 30 },
+  { name: '최근 90일', days: 90 },
+];
+
+/**
+ * 결과 개수 옵션
+ */
+export const TOP_COUNT_OPTIONS = [5, 10, 15, 20];
+
+/**
+ * 북마크 파일 경로
+ */
+import path from 'path';
+export const BOOKMARKS_FILE = path.join(process.cwd(), 'data', 'bookmarks.json');

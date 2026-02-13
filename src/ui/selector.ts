@@ -5,11 +5,15 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import type { TrendingTopic } from '../youtube/trendFetcher';
+import type { SearchFilters } from './filterSelector';
 
 /**
  * 박스 형태의 헤더를 출력합니다
+ *
+ * @param topicCount - 주제 개수
+ * @param filters - 검색 필터 (선택 사항)
  */
-function displayHeader(): void {
+function displayHeader(topicCount: number, filters?: SearchFilters): void {
   const width = 70;
   const line = '═'.repeat(width - 2);
 
@@ -19,7 +23,17 @@ function displayHeader(): void {
   console.log(chalk.bold.cyan('║') + chalk.gray('  심리학 트렌딩 → 스크립트 → 이미지 프롬프트'.padEnd(width - 2)) + chalk.bold.cyan('║'));
   console.log(chalk.bold.cyan(`╠${line}╣`));
   console.log(chalk.bold.cyan('║') + ''.padEnd(width - 2) + chalk.bold.cyan('║'));
-  console.log(chalk.bold.cyan('║') + chalk.bold.white('  📊 최근 2주간 심리학 트렌딩 TOP 5'.padEnd(width - 2)) + chalk.bold.cyan('║'));
+
+  // 동적 헤더 텍스트
+  let headerText = '  📊 ';
+  if (filters) {
+    const daysText = filters.daysAgo < 30 ? `${filters.daysAgo}일` : `${Math.floor(filters.daysAgo / 30)}개월`;
+    headerText += `최근 ${daysText}간 심리학 트렌딩 TOP ${topicCount}`;
+  } else {
+    headerText += `저장된 북마크 ${topicCount}개`;
+  }
+
+  console.log(chalk.bold.cyan('║') + chalk.bold.white(headerText.padEnd(width - 2)) + chalk.bold.cyan('║'));
   console.log(chalk.bold.cyan('║') + ''.padEnd(width - 2) + chalk.bold.cyan('║'));
 }
 
@@ -203,13 +217,14 @@ async function confirmSelection(): Promise<'proceed' | 'reselect' | 'exit'> {
  * 트렌딩 주제 목록을 보여주고 사용자가 선택하도록 합니다
  *
  * @param topics - 선택 가능한 주제 목록
+ * @param filters - 검색 필터 (선택 사항, 북마크 목록일 경우 null)
  * @returns 사용자가 선택한 주제
  */
-export async function selectTopic(topics: TrendingTopic[]): Promise<TrendingTopic> {
+export async function selectTopic(topics: TrendingTopic[], filters?: SearchFilters | null): Promise<TrendingTopic> {
   try {
     while (true) {
       // 헤더 및 주제 목록 표시
-      displayHeader();
+      displayHeader(topics.length, filters || undefined);
       displayTopics(topics);
 
       // inquirer로 선택 UI 생성
@@ -229,7 +244,7 @@ export async function selectTopic(topics: TrendingTopic[]): Promise<TrendingTopi
           name: 'selectedIndex',
           message: chalk.bold.white('어떤 주제로 스크립트를 작성할까요?') + chalk.gray(' (↑↓ 방향키로 선택, Enter로 확정)'),
           choices,
-          pageSize: 10,
+          pageSize: Math.min(topics.length, 15), // 동적 pageSize: 최대 15개
         },
       ]);
 

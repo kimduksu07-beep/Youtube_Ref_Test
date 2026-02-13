@@ -20,6 +20,8 @@ import { selectTopic } from './ui/selector';
 import { generateScriptPrompt } from './prompt/scriptPrompt';
 import { generateImagePrompt } from './prompt/imagePrompt';
 import { generateFileName } from './utils/formatter';
+import { selectFilters } from './ui/filterSelector';
+import { displayAllCharts } from './ui/chartDisplay';
 
 /**
  * 프로그램 헤더를 출력합니다
@@ -191,15 +193,21 @@ async function runWorkflow(): Promise<void> {
     // 프로그램 헤더 출력
     displayProgramHeader();
 
-    // STEP 1: 트렌딩 주제 수집
-    console.log(chalk.bold.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
-    console.log(chalk.bold.white('🔍 STEP 1: 트렌딩 주제 수집'));
+    // STEP 1: 필터 선택
+    const filters = await selectFilters();
+
+    // STEP 2: 트렌딩 주제 수집
+    console.log(chalk.bold.white('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
+    console.log(chalk.bold.white('🔍 STEP 2: 트렌딩 주제 수집'));
     console.log(chalk.bold.white('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'));
 
-    const topics = await fetchTrendingVideos();
+    const topics = await fetchTrendingVideos(filters);
 
-    // STEP 2: 주제 선택 (selector.ts에서 자체적으로 UI 출력)
-    const selectedTopic = await selectTopic(topics);
+    // STEP 3: 차트 표시
+    displayAllCharts(topics);
+
+    // STEP 4: 주제 선택 (selector.ts에서 자체적으로 UI 출력)
+    const selectedTopic = await selectTopic(topics, filters);
 
     // STEP 3 & 4: 스크립트 프롬프트 생성 및 입력 대기
     const script = await generateScriptPrompt(selectedTopic);

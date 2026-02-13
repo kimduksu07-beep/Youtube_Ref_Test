@@ -4,8 +4,10 @@
 
 import { google } from 'googleapis';
 import dayjs from 'dayjs';
-import { getYouTubeApiKey } from '../utils/config';
+import chalk from 'chalk';
+import { getYouTubeApiKey, MIN_DURATION_SECONDS, FALLBACK_SEARCH_DAYS } from '../utils/config';
 import { formatViewCount, formatDate } from '../utils/formatter';
+import type { SearchFilters } from '../ui/filterSelector';
 
 const youtube = google.youtube('v3');
 
@@ -151,18 +153,18 @@ async function retryWithBackoff<T>(
 /**
  * 심리학 관련 트렌딩 비디오를 가져옵니다
  *
- * @param daysAgo - 검색 기간 (기본값: 14일)
+ * @param filters - 검색 필터 설정
  * @returns 트렌딩 주제 목록
  */
-export async function fetchTrendingVideos(daysAgo: number = 14): Promise<TrendingTopic[]> {
+export async function fetchTrendingVideos(filters: SearchFilters): Promise<TrendingTopic[]> {
   try {
     console.log('📺 YouTube API로 트렌딩 영상을 검색하는 중...\n');
 
     const apiKey = getYouTubeApiKey();
 
     // 검색 기간 설정
-    const publishedAfter = dayjs().subtract(daysAgo, 'day').toISOString();
-    console.log(`🔍 검색 기간: 최근 ${daysAgo}일 (${dayjs(publishedAfter).format('YYYY.MM.DD')} 이후)`);
+    const publishedAfter = dayjs().subtract(filters.daysAgo, 'day').toISOString();
+    console.log(`🔍 검색 기간: 최근 ${filters.daysAgo}일 (${dayjs(publishedAfter).format('YYYY.MM.DD')} 이후)`);
 
     // Step 1: search.list API로 영상 검색
     console.log('🔎 1단계: 심리학 관련 영상 검색 중...');
@@ -186,10 +188,10 @@ export async function fetchTrendingVideos(daysAgo: number = 14): Promise<Trendin
     const searchItems = searchResponse.data.items || [];
 
     if (searchItems.length === 0) {
-      if (daysAgo === 14) {
-        console.log('⚠️ 최근 2주간 심리학 관련 트렌딩 영상을 찾지 못했습니다.');
-        console.log('💡 검색 기간을 30일로 늘려서 다시 시도합니다...\n');
-        return await fetchTrendingVideos(30);
+      if (filters.daysAgo < FALLBACK_SEARCH_DAYS) {
+        console.log(`⚠️ 최근 ${filters.daysAgo}일간 심리학 관련 트렌딩 영상을 찾지 못했습니다.`);
+        console.log(`💡 검색 기간을 ${FALLBACK_SEARCH_DAYS}일로 늘려서 다시 시도합니다...\n`);
+        return await fetchTrendingVideos({ ...filters, daysAgo: FALLBACK_SEARCH_DAYS });
       }
 
       throw new Error(
@@ -236,23 +238,24 @@ export async function fetchTrendingVideos(daysAgo: number = 14): Promise<Trendin
     const videoItems = videosResponse.data.items || [];
     console.log(`✓ ${videoItems.length}개 영상의 상세 정보를 가져왔습니다.\n`);
 
-    // Step 4: 5분 이상 영상만 필터링
-    console.log('⏱️  4단계: 5분 이상 영상만 필터링 중...');
+    // Step 4: 최소 길이 이상 영상만 필터링
+    const minMinutes = Math.floor(MIN_DURATION_SECONDS / 60);
+    console.log(`⏱️  4단계: ${minMinutes}분 이상 영상만 필터링 중...`);
 
     const longVideos = videoItems.filter(video => {
       const contentDetails = video.contentDetails;
       if (!contentDetails?.duration) return false;
 
       const durationSeconds = parseDuration(contentDetails.duration);
-      return durationSeconds >= 300; // 5분 = 300초
+      return durationSeconds >= MIN_DURATION_SECONDS;
     });
 
-    console.log(`✓ 쇼츠 제외: ${longVideos.length}개 영상 (5분 이상)\n`);
+    console.log(`✓ 쇼츠 제외: ${longVideos.length}개 영상 (${minMinutes}분 이상)\n`);
 
-    // Step 5: 조회수 기준으로 정렬하고 상위 5개 선택
-    console.log('🏆 5단계: 조회수 순으로 정렬 중...');
+    // Step 5: 조회수 필터 적용 및 정렬
+    console.log('👀 5단계: 조회수 필터 적용 중...');
 
-    const topics: TrendingTopic[] = longVideos
+    const allTopics: TrendingTopic[] = longVideos
       .map(video => {
         const snippet = video.snippet;
         const statistics = video.statistics;
@@ -285,15 +288,31 @@ export async function fetchTrendingVideos(daysAgo: number = 14): Promise<Trendin
           durationSeconds,
         };
       })
-      .filter((topic): topic is TrendingTopic => topic !== null)
+      .filter((topic): topic is TrendingTopic => topic !== null);
+
+    // 조회수 범위 필터 적용
+    const filteredTopics = allTopics.filter(topic => {
+      return topic.viewCount >= filters.minViewCount && topic.viewCount <= filters.maxViewCount;
+    });
+
+    if (filteredTopics.length === 0) {
+      console.log(chalk.yellow('\n⚠️ 선택한 필터로 검색된 영상이 없습니다.'));
+      console.log(chalk.cyan('💡 해결법: 필터 조건을 완화하거나 검색 기간을 늘려보세요.\n'));
+      throw new Error('필터 결과 없음');
+    }
+
+    // Step 6: 조회수 순으로 정렬하고 상위 N개 선택
+    console.log('🏆 6단계: 조회수 순으로 정렬 중...');
+
+    const topics = filteredTopics
       .sort((a, b) => b.viewCount - a.viewCount)
-      .slice(0, 5)
+      .slice(0, filters.topCount)
       .map((topic, index) => ({
         ...topic,
         rank: index + 1,
       }));
 
-    console.log(`✓ 상위 ${topics.length}개 영상을 선별했습니다.\n`);
+    console.log(chalk.green(`✓ 상위 ${topics.length}개 영상을 선별했습니다.\n`));
 
     // 결과 출력
     console.log('🎉 트렌딩 주제 수집 완료!\n');
